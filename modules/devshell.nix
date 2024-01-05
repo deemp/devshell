@@ -10,7 +10,9 @@ let
 
   # Because we want to be able to push pure JSON-like data into the
   # environment.
-  strOrPackage = import ../nix/strOrPackage.nix { inherit lib pkgs; };
+  strOrPackage = import ../nix/strOrPackage.nix { inherit pkgs; };
+
+  inherit (import ../nix/commands/lib.nix { inherit pkgs; }) devshellMenuCommandName;
 
   # Use this to define a flake app for the environment.
   mkFlakeApp = bin: {
@@ -255,7 +257,7 @@ in
       type = types.str;
       default = ''
         {202}🔨 Welcome to ${cfg.name}{reset}
-        $(type -p menu &>/dev/null && menu)
+        $(type -p ${devshellMenuCommandName} &>/dev/null && ${devshellMenuCommandName})
       '';
       apply = replaceStrings
         (map (key: "{${key}}") (attrNames ansi))
