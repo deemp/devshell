@@ -38,7 +38,23 @@
           };
         };
 
-        devShells.default = devshell.fromTOML ./devshell.toml;
+        devShells = {
+          default = devshell.mkShell {
+            commands = {
+              packages = [
+                "diffutils" # used by golangci-lint
+                "goreleaser"
+              ];
+              scripts = [
+                {
+                  prefix = "nix run .#";
+                  inherit packages;
+                }
+              ];
+            };
+          };
+          toml = devshell.fromTOML ./devshell.toml;
+        };
 
         apps.default = devShells.default.flakeApp;
 
