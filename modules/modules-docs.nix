@@ -80,7 +80,7 @@ let
       compareWithPrio = pred: cmp: splitByAndCompare pred compare cmp;
       moduleCmp = compareWithPrio isEnable (compareWithPrio isPackage compare);
     in
-    compareLists moduleCmp a.loc b.loc < 0;
+    compareLists moduleCmp (map toString a.loc) (map toString b.loc) < 0;
 
   # Replace functions by the string <function>
   substFunction = x:
@@ -117,60 +117,63 @@ let
   # TODO: display values like TOML instead.
   toMarkdown = optionsDocs:
     let
+      optionsDocsPartitioned = partition (opt: (take 2 opt.loc) == [ "commands" "<name>" ]) optionsDocs;
+      nixOnly = optionsDocsPartitioned.right;
+      nixTOML = filter (opt: head opt.loc != "_module") optionsDocsPartitioned.wrong;
+
       # TODO: handle opt.relatedPackages. What is it for?
+      # Assuming "not string" elements are only in the locator suffix
       optToMd = opt:
+        let heading = (lib.showOption (filter isString opt.loc)) + (concatStrings (filter (x: !(isString x)) opt.loc)); in
         ''
-          ## `${opt.name}`
+          ### `${heading}`
 
         ''
         + (lib.optionalString opt.internal "\n**internal**\n")
         + opt.description + "\n"
         + (lib.optionalString (opt ? default && opt.default != null) ''
-
           **Default value**:
+          
           ```nix
-          ${
-            # When defaultText is set on the module, we only get back a
-            # string here and defaultText has disappeared. Re-hydrate that
-            # knowledge by looking at the type.
-            if builtins.isString opt.default && !(lib.hasPrefix "string" opt.type) then
-              # If it's a defaultText, assume it's already formatted as nix
-              # code.
-              opt.default
-            else
-              builtins.toJSON opt.default
-          }
+          ${removeSuffix "\n" opt.default.text}
           ```
 
         '')
         + ''
+          **Type**: `${opt.type}`
 
-          **Type**: ${opt.type}
         ''
         + (lib.optionalString (opt ? example) ''
-
           **Example value**:
+          
           ```nix
-          ${builtins.toJSON opt.example}
+          ${removeSuffix "\n" opt.example.text}
           ```
 
         '')
         + ''
+          **Declared in**:
 
-          Declared in:
         ''
         + (
           lib.concatStringsSep
             "\n"
             (map
-              (decl: "* [${decl.path}](${decl.url})")
+              (decl: "- [${decl.path}](${decl.url})")
               opt.declarations
             )
         )
         + "\n"
       ;
+      doc = [
+        "# `devshell` options\n"
+        "## Available only in `Nix`\n"
+        (concatStringsSep "\n" (map optToMd nixOnly))
+        "## Available in `Nix` and `TOML`\n"
+        (concatStringsSep "\n" (map optToMd nixTOML))
+      ];
     in
-    concatStringsSep "\n" (map optToMd optionsDocs);
+    concatStringsSep "\n" doc;
 in
 {
   options.modules-docs = {
