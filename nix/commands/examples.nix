@@ -1,4 +1,6 @@
-{ pkgs }:
+{ system ? builtins.currentSystem
+, pkgs ? import ../nixpkgs.nix { inherit system; }
+}:
 {
   nested = {
     "category 1" = [
