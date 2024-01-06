@@ -1,4 +1,4 @@
-{ pkgs, strOrPackage, attrsOfNested, pairHelpPackageType, pairHelpCommandType, flatOptionsType, maxDepth }:
+{ pkgs, strOrPackage, attrsNestedOf, pairHelpPackageType, pairHelpCommandType, flatOptionsType, maxDepth }:
 with pkgs.lib;
 {
   prefix = mkOption {
@@ -19,7 +19,7 @@ with pkgs.lib;
   };
 
   prefixes = mkOption {
-    type = types.nullOr (attrsOfNested types.str);
+    type = types.nullOr (attrsNestedOf types.str);
     default = { };
     description = ''
       A leaf value becomes a prefix of a `${flatOptionsType.name}.name` of a `package` (`command`) with a matching path in `packages` (`commands`).
@@ -39,7 +39,7 @@ with pkgs.lib;
   packages = mkOption {
     type =
       types.nullOr (
-        attrsOfNested (types.oneOf [
+        attrsNestedOf (types.oneOf [
           strOrPackage
           pairHelpPackageType
         ]));
@@ -89,7 +89,7 @@ with pkgs.lib;
   commands = mkOption {
     type =
       types.nullOr (
-        attrsOfNested (types.oneOf [
+        attrsNestedOf (types.oneOf [
           types.str
           pairHelpCommandType
         ]));
@@ -133,7 +133,7 @@ with pkgs.lib;
   };
 
   helps = mkOption {
-    type = types.nullOr (attrsOfNested types.str);
+    type = types.nullOr (attrsNestedOf types.str);
     default = { };
     description = ''
       A leaf value can be used as `${flatOptionsType.name}.help` for a `package` (`command`) with a matching path in `packages` (`commands`).
@@ -171,7 +171,7 @@ with pkgs.lib;
   };
 
   exposes = mkOption {
-    type = types.nullOr (attrsOfNested types.bool);
+    type = types.nullOr (attrsNestedOf types.bool);
     default = { };
     description = ''
       A nested (max depth is ${toString maxDepth}) attrset of `${flatOptionsType.name}.expose`-s.

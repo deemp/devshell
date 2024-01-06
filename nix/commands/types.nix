@@ -17,7 +17,7 @@ rec {
 
   maxDepth = 100;
 
-  attrsOfNested = elemType:
+  attrsNestedOf = elemType:
     let elems = genList (x: null) maxDepth; in
     foldl
       (t: _: types.attrsOf (types.either elemType t) // {
@@ -61,7 +61,7 @@ rec {
 
   pairHelpCommandType = list2Of types.str types.str;
 
-  nestedOptions = import ./nestedOptions.nix { inherit pkgs strOrPackage attrsOfNested pairHelpPackageType pairHelpCommandType flatOptionsType maxDepth; };
+  nestedOptions = import ./nestedOptions.nix { inherit pkgs strOrPackage attrsNestedOf pairHelpPackageType pairHelpCommandType flatOptionsType maxDepth; };
 
   nestedOptionsType =
     let submodule = types.submodule { options = nestedOptions; }; in
