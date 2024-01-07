@@ -85,7 +85,6 @@ rec {
       types.oneOf [
         strOrPackage
         pairHelpPackageType
-        pairHelpCommandType
         nestedOptionsType
         flatOptionsType
       ]
@@ -103,7 +102,6 @@ rec {
       types.oneOf [
         strOrPackage
         pairHelpPackageType
-        pairHelpCommandType
         flatOptionsType
       ]
     ) // {
