@@ -101,7 +101,7 @@ rec {
 
   devshellMenuCommandName = "menu";
 
-  mkCommandMenu = configs: flatOptionsType.merge [ ] [
+  mkDevshellMenuCommand = configs: flatOptionsType.merge [ ] [
     {
       file = unknownFileName;
       value = {
@@ -113,7 +113,7 @@ rec {
             (
               let
                 commands = [ commandMenu ] ++ config.commands;
-                commandMenu = mkCommandMenu commands;
+                commandMenu = mkDevshellMenuCommand commands;
               in
               [ commandMenu ] ++ configs
             )

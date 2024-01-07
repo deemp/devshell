@@ -4,7 +4,7 @@ let
   inherit (import ../nix/commands/lib.nix { inherit pkgs; })
     commandsType
     commandToPackage
-    mkCommandMenu
+    mkDevshellMenuCommand
     ;
 in
 {
@@ -36,7 +36,7 @@ in
   config.devshell.packages =
     builtins.filter
       (x: x != null)
-      (map commandToPackage ([ (mkCommandMenu config.commands) ] ++ config.commands));
+      (map commandToPackage ([ (mkDevshellMenuCommand config.commands) ] ++ config.commands));
 
   # config.devshell.motd = "$(motd)";
 }
