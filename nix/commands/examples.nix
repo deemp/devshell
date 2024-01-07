@@ -1,6 +1,7 @@
 { system ? builtins.currentSystem
 , pkgs ? import ../nixpkgs.nix { inherit system; }
 }:
+let inherit (pkgs) lib; in
 {
   nested = {
     "category 1" = [
@@ -33,10 +34,10 @@
         exposes.a.b.hyperfine = false;
       }
       {
-        commands.a.b.awk = ''${pkgs.gawk}/bin/awk'';
+        commands.a.b.awk = ''${lib.getExe pkgs.gawk} $@'';
         helps.a.b.awk = "[command] run awk";
 
-        commands.a.b.jq-2 = [ "[command] run jq" "${pkgs.jq}/bin/jq" ];
+        commands.a.b.jq-2 = [ "[command] run jq" "${lib.getExe pkgs.jq} $@" ];
 
         commands."command with spaces" = ''printf "hello\n"'';
         helps."command with spaces" = ''[command] print "hello"'';
@@ -46,6 +47,20 @@
       "nodePackages.yarn"
       {
         package = pkgs.gnugrep;
+      }
+      {
+        name = "run cowsay";
+        help = "run hello";
+        package = "cowsay";
+      }
+      {
+        name = "run perl";
+        help = "run perl";
+        command = "${lib.getExe pkgs.perl} $@";
+      }
+      {
+        name = "nix fmt";
+        help = "format Nix files";
       }
     ];
     category-2 = [
