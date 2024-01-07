@@ -2,6 +2,14 @@
 with lib;
 # These are all the options available for the commands.
 {
+  prefix = mkOption {
+    type = types.str;
+    default = "";
+    description = ''
+      Prefix of the command name in the devshell menu.
+    '';
+  };
+
   name = mkOption {
     type = types.nullOr types.str;
     default = null;

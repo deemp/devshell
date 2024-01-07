@@ -5,8 +5,8 @@ with pkgs.lib;
     type = types.nullOr types.str;
     default = "";
     description = ''
-      Possible prefix of a `${flatOptionsType.name}.name`.
-        
+      Possible `${flatOptionsType.name}.prefix`.
+      
       Priority of this option when selecting a prefix: `1`.
       
       Lowest priority: `1`.
@@ -22,7 +22,8 @@ with pkgs.lib;
     type = types.nullOr (attrsNestedOf types.str);
     default = { };
     description = ''
-      A leaf value becomes a prefix of a `${flatOptionsType.name}.name` of a `package` (`command`) with a matching path in `packages` (`commands`).
+      A leaf value becomes a `${flatOptionsType.name}.prefix`
+      of a `package` (`command`) with a matching path in `packages` (`commands`).
 
       Priority of this option when selecting a prefix: `2`.
       

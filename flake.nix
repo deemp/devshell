@@ -50,6 +50,10 @@
                   prefix = "nix run .#";
                   inherit packages;
                 }
+                {
+                  name = "nix fmt";
+                  help = "format Nix files";
+                }
               ];
             };
           };

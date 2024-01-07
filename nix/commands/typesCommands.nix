@@ -109,9 +109,8 @@ rec {
                         expose = attrByPath path (config.expose or (!forPackages)) exposes;
                       in
                       {
-                        name = "${prefix}${name}";
                         "${if forPackages then "package" else "command"}" = value;
-                        inherit help category expose;
+                        inherit name prefix help category expose;
                       }))
                   ];
               in

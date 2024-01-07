@@ -25,37 +25,58 @@ rec {
 
   # Fill in default options for a command.
   commandToPackage = cmd:
-    assert assertMsg (cmd.command == null || cmd.name != cmd.command) "${commandsMessage} ${toString cmd.name} cannot be set to both the `name` and the `command` attributes. Did you mean to use the `package` attribute?";
-    assert assertMsg (cmd.package != null || (cmd.command != null && cmd.command != "")) "${commandsMessage} ${resolveName cmd} expected either a command or package attribute.";
-    if cmd.package == null
-    then
-      writeDefaultShellScript
-        {
-          name = cmd.name;
-          text = cmd.command;
-          binPrefix = true;
-        }
-    else if !cmd.expose
+    if
+      (cmd.name != devshellMenuCommandName && cmd.command == null)
+      && cmd.package == null
     then null
-    else cmd.package;
+    else
+      assert assertMsg (cmd.command == null || cmd.name != cmd.command) "${commandsMessage} ${toString cmd.name} cannot be set to both the `name` and the `command` attributes. Did you mean to use the `package` attribute?";
+      assert assertMsg (cmd.package != null || (cmd.command != null && cmd.command != "")) "${commandsMessage} ${resolveName cmd} expected either a command or package attribute.";
+      if cmd.package == null
+      then
+        writeDefaultShellScript
+          {
+            name = cmd.name;
+            text = cmd.command;
+            binPrefix = true;
+          }
+      else if !cmd.expose
+      then null
+      else cmd.package;
 
   commandsToMenu = cmds:
     let
       cleanName = { name, package, ... }@cmd:
-        assert assertMsg (cmd.name != null || cmd.package != null) "${commandsMessage} some command is missing both a `name` and a `package` attribute.";
-        let
-          name = resolveName cmd;
+        if
+          cmd.package == null && (cmd.name != devshellMenuCommandName && cmd.command == null)
+          && (cmd.prefix != "" || (cmd.name != null && cmd.name != ""))
+          && cmd.help != null
+        then
+          cmd // {
+            name = "${
+                if cmd.prefix != null then cmd.prefix else ""
+              }${
+                if cmd.name != null then cmd.name else ""
+              }";
+          }
+        else
+          assert assertMsg (cmd.name != null || cmd.package != null) "${commandsMessage} some command is missing both a `name` and a `package` attribute.";
+          let
+            name = pipe cmd [
+              resolveName
+              (x: if x != null && strings.hasInfix " " x then "'${x}'" else x)
+              (x: "${cmd.prefix}${x}")
+            ];
 
-          help =
-            if cmd.help == null then
-              cmd.package.meta.description or ""
-            else
-              cmd.help;
-        in
-        cmd // {
-          inherit help;
-          name = if name != null && cmd.package == null && strings.hasInfix " " name then "'${name}'" else name;
-        };
+            help =
+              if cmd.help == null then
+                cmd.package.meta.description or ""
+              else
+                cmd.help;
+          in
+          cmd // {
+            inherit name help;
+          };
 
       commands = map cleanName cmds;
 
