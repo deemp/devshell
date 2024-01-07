@@ -1,8 +1,7 @@
 { system ? builtins.currentSystem
 , pkgs ? import ../nixpkgs.nix { inherit system; }
-, lib ? pkgs.lib
 }:
-with lib;
+with pkgs.lib;
 with builtins;
 let
   inherit (import ./types.nix { inherit pkgs; })
@@ -22,11 +21,6 @@ rec {
     in
     { inherit defsFlat defsNested; };
 
-  extractValue = arg: pipe arg [
-    (x: if isList x then last x else x)
-    (x: if strOrPackage.check x then resolveKey x else x)
-  ];
-
   extractHelp = arg: if isList arg then head arg else null;
 
   # Fallback to the package pname if the name is unset
@@ -36,10 +30,13 @@ rec {
     else
       cmd.name;
 
-  flattenNonAttrs = config: alternative:
+  flattenNonAttrsOrElse = config: alternative:
     if !(isAttrs config) || isDerivation config then
       let
-        value = extractValue config;
+        value = pipe config [
+          (x: if isList x then last x else x)
+          (x: if strOrPackage.check x then resolveKey x else x)
+        ];
         help = extractHelp config;
       in
       [{
@@ -54,7 +51,7 @@ rec {
   normalizeCommandsFlat_ = { file ? unknownFileName, loc ? [ ], arg ? [ ] }:
     pipe arg [
       (value: (mergeDefs loc [{ inherit file value; }]).defsFlat)
-      (map (config: flattenNonAttrs config config))
+      (map (config: flattenNonAttrsOrElse config config))
       flatten
       (map (value: { inherit file; value = [ value ]; }))
       (commandsFlatType.merge loc)
@@ -74,10 +71,12 @@ rec {
 
   normalizeCommandsNested_ = { file ? unknownFileName, loc ? [ ], arg ? { } }:
     pipe arg [
+      # typecheck and augment configs with missing attributes (if a config is an attrset)
       (value: (mergeDefs loc [{ inherit file value; }]).defsNested)
       (mapAttrsToList
         (category: map (config: (map (x: x // { inherit category; })) (
-          (flattenNonAttrs config) (
+          (flattenNonAttrsOrElse config) (
+            # a nestedOptionsType at this point has all attributes due to augmentation
             if config?packages then
               let
                 inherit (config) packages commands helps prefixes exposes;
@@ -86,7 +85,10 @@ rec {
                   pipe (collectLeaves (if forPackages then packages else commands)) [
                     (map (leaf:
                       let
-                        value = extractValue leaf.value;
+                        value = pipe leaf.value [
+                          (x: if isList x then last x else x)
+                          (x: if forPackages && strOrPackage.check x then resolveKey x else x)
+                        ];
 
                         path = leaf.path;
 
