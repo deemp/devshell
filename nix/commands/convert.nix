@@ -23,15 +23,14 @@ rec {
     else
       str;
 
+  commandsMessage = "[[commands]]:";
+
   # Fill in default options for a command.
   commandToPackage = cmd:
-    if
-      (cmd.name != devshellMenuCommandName && cmd.command == null)
-      && cmd.package == null
-    then null
+    if cmd.name != devshellMenuCommandName && cmd.command == null && cmd.package == null then null
     else
-      assert assertMsg (cmd.command == null || cmd.name != cmd.command) "${commandsMessage} ${toString cmd.name} cannot be set to both the `name` and the `command` attributes. Did you mean to use the `package` attribute?";
-      assert assertMsg (cmd.package != null || (cmd.command != null && cmd.command != "")) "${commandsMessage} ${resolveName cmd} expected either a command or package attribute.";
+      assert assertMsg (cmd.command == null || cmd.name != cmd.command) "${commandsMessage} in ${lib.generators.toPretty {} cmd}, ${toString cmd.name} cannot be set to both the `name` and the `command` attributes. Did you mean to use the `package` attribute?";
+      assert assertMsg ((cmd.package != null && cmd.command == null) || (cmd.command != null && cmd.command != "" && cmd.package == null)) "${commandsMessage} ${lib.generators.toPretty {} cmd} expected either a non-empty command or a package attribute, not both.";
       if cmd.package == null
       then
         writeDefaultShellScript
@@ -60,7 +59,7 @@ rec {
               }";
           }
         else
-          assert assertMsg (cmd.name != null || cmd.package != null) "${commandsMessage} some command is missing both a `name` and a `package` attribute.";
+          assert assertMsg (cmd.name != null || cmd.package != null) "${commandsMessage} some command is missing a `name`, a `prefix`, and a `package` attributes.";
           let
             name = pipe cmd [
               resolveName
