@@ -126,7 +126,7 @@ rec {
           {
             type = flatConfigType;
             description = ''
-              A config for a command when the `commands` option is a list ("flat").
+              A config for a command when the `commands` option is a list.
             '';
             example = literalExpression ''
               [
