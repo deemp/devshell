@@ -1,4 +1,4 @@
-{ lib, strOrPackage }:
+{ lib, strOrPackage, flatOptionsType }:
 with lib;
 # These are all the options available for the commands.
 {
@@ -14,7 +14,11 @@ with lib;
     type = types.nullOr types.str;
     default = null;
     description = ''
-      Name of this command. Defaults to attribute name in commands.
+      Name of this command. 
+      
+      Defaults to a `(${flatOptionsType.name}) package` name or pname if present.
+
+      The value of this option is required for a `(${flatOptionsType.name}) command`.
     '';
   };
 
@@ -22,8 +26,8 @@ with lib;
     type = types.str;
     default = "[general commands]";
     description = ''
-      Set a free text category under which this command is grouped
-      and shown in the help menu.
+      Sets a free text category under which this command is grouped
+      and shown in the devshell menu.
     '';
   };
 
@@ -64,7 +68,7 @@ with lib;
     type = types.bool;
     default = true;
     description = ''
-      When `true`, the `command` or the `package` will be added to the environment.
+      When `true`, the `(${flatOptionsType.name}) command` or the `(${flatOptionsType.name}) package` will be added to the environment.
         
       Otherwise, they will not be added to the environment, but will be printed
       in the devshell description.

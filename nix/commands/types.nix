@@ -37,9 +37,11 @@ rec {
     merge = mergeOneOption;
   };
 
-  flatOptions = import ./flatOptions.nix { inherit lib strOrPackage; };
+  flatOptions = import ./flatOptions.nix { inherit lib strOrPackage flatOptionsType; };
 
   mkAttrsToString = str: { __toString = _: str; };
+
+  mkLocLast = name: mkAttrsToString " (${name})";
 
   flatOptionsType =
     let submodule = types.submodule { options = flatOptions; }; in
@@ -50,7 +52,7 @@ rec {
         (name_: value: value // {
           loc = prefix ++ [
             name_
-            (mkAttrsToString " (${name})")
+            (mkLocLast name)
           ];
           declarations = [ "${toString ../..}/nix/commands/flatOptions.nix" ];
         })
@@ -61,7 +63,12 @@ rec {
 
   pairHelpCommandType = list2Of types.str types.str;
 
-  nestedOptions = import ./nestedOptions.nix { inherit pkgs strOrPackage attrsNestedOf pairHelpPackageType pairHelpCommandType flatOptionsType maxDepth; };
+  nestedOptions = import ./nestedOptions.nix {
+    inherit
+      pkgs strOrPackage attrsNestedOf pairHelpPackageType
+      pairHelpCommandType flatOptionsType maxDepth
+      nestedOptionsType;
+  };
 
   nestedOptionsType =
     let submodule = types.submodule { options = nestedOptions; }; in
@@ -146,7 +153,7 @@ rec {
         mkOption {
           type = nestedConfigType;
           description = ''
-            A config for command(s) when the `commands` option is an attrset ("nested").
+            A config for command(s) when the `commands` option is an attrset.
           '';
           example = literalExpression ''
             {

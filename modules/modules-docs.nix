@@ -114,11 +114,17 @@ let
       )
   );
 
+  inherit (import ../nix/commands/lib.nix { inherit pkgs; }) mkLocLast nestedOptionsType;
+
   # TODO: display values like TOML instead.
   toMarkdown = optionsDocs:
     let
-      optionsDocsPartitioned = partition (opt: (take 2 opt.loc) == [ "commands" "<name>" ]) optionsDocs;
+      nixOnlyLocPrefix = [ "commands" "<name>" ];
+      optionsDocsPartitioned = partition (opt: (take 2 opt.loc) == nixOnlyLocPrefix) optionsDocs;
       nixOnly = optionsDocsPartitioned.right;
+      nixOnlyTopPartitioned = partition (opt: opt.loc == nixOnlyLocPrefix ++ [ "*" ]) nixOnly;
+      nixOnlyPartitioned = partition (opt: ("${last opt.loc}" == "${mkLocLast nestedOptionsType.name}")) nixOnlyTopPartitioned.wrong;
+      nixOnly_ = nixOnlyTopPartitioned.right ++ nixOnlyPartitioned.right ++ nixOnlyPartitioned.wrong;
       nixTOML = filter (opt: head opt.loc != "_module") optionsDocsPartitioned.wrong;
 
       # TODO: handle opt.relatedPackages. What is it for?
@@ -168,7 +174,7 @@ let
       doc = [
         "# `devshell` options\n"
         "## Available only in `Nix`\n"
-        (concatStringsSep "\n" (map optToMd nixOnly))
+        (concatStringsSep "\n" (map optToMd nixOnly_))
         "## Available in `Nix` and `TOML`\n"
         (concatStringsSep "\n" (map optToMd nixTOML))
       ];
