@@ -4,9 +4,9 @@
 
 ### `commands.<name>.*`
 
-A config for command(s) when the `commands` option is an attrset ("nested").
+A config for command(s) when the `commands` option is an attrset.
 
-**Type**: `(package or string convertible to it) or (list with two elements of types: [ string (package or string convertible to it) ]) or (list with two elements of types: [ string string ]) or (nestedOptions) or (flatOptions)`
+**Type**: `(package or string convertible to it) or (list with two elements of types: [ string (package or string convertible to it) ]) or (nestedOptions) or (flatOptions)`
 
 **Example value**:
 
@@ -27,56 +27,40 @@ A config for command(s) when the `commands` option is an attrset ("nested").
 
 - [nix/commands/types.nix](https://github.com/numtide/devshell/tree/main/nix/commands/types.nix)
 
-### `commands.<name>.*.package (flatOptions)`
-
-Used to bring in a specific package. This package will be added to the
-environment.
-
-**Default value**:
-
-```nix
-null
-```
-
-**Type**: `null or (package or string convertible to it) or package`
-
-**Declared in**:
-
-- [nix/commands/flatOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/flatOptions.nix)
-
 ### `commands.<name>.*.packages (nestedOptions)`
 
-A nested (max depth is 100) attrset of `flatOptions.package`-s
+A nested (max depth is 100) attrset of `(flatOptions) package`-s
 to describe in the devshell menu
 and optionally bring to the environment.
 
 A path to a leaf value is concatenated via `.`
-and used as a suffix of `flatOptions.name`.
+and used as a `(flatOptions) name`.
 
 A leaf value can be of three types.
   
 1. When a `string` with a value `<string>`,
    devshell tries to resolve a derivation
-   `pkgs.<string>` and use it as a `flatOptions.package`.
+   `pkgs.<string>` and use it as a `(flatOptions) package`.
 
-2. When a `derivation`, it's used as a `flatOptions.package`.
+2. When a `derivation`, it's used as a `(flatOptions) package`.
 
 3. When a list with two elements:
    1. The first element is a `string`
-      that is used to select a `flatOptions.help`.
-      - Priority of this `string` (if present) when selecting a `flatOptions.help`: `4`.
+      that is used to select a `(flatOptions) help`.
+      - Priority of this `string` (if present) when selecting a `(flatOptions) help`: `4`.
 
         Lowest priority: `1`.
    2. The second element is interpreted as if
       the leaf value were initially a `string` or a `derivation`.
   
-Priority of `package.meta.description` (if present in the resolved `flatOptions.package`) when selecting a `flatOptions.help`: 2
+Priority of `package.meta.description` (if present in the resolved `(flatOptions) package`) 
+when selecting a `(flatOptions) help`: 2
 
 Lowest priority: `1`.
 
 A user may prefer not to bring the environment some of the packages.
 
-Priority of `expose = false` when selecting a `flatOptions.expose`: `1`.
+Priority of `expose = false` when selecting a `(flatOptions) expose`: `1`.
 
 Lowest priority: `1`.
 
@@ -100,10 +84,240 @@ Lowest priority: `1`.
 
 - [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
 
+### `commands.<name>.*.commands (nestedOptions)`
+
+A nested (max depth is 100) attrset of `(flatOptions) command`-s
+to describe in the devshell menu
+and bring to the environment.
+
+A path to a leaf value is concatenated via `.`
+and used in the `(flatOptions) name`.
+
+A leaf value can be of two types.
+  
+1. When a `string`, it's used as a `(flatOptions) command`.
+
+2. When a list with two elements:
+   1. the first element of type `string` with a value `<string>`
+      that is used to select a `help`;
+
+      Priority of the `<string>` (if present) when selecting a `(flatOptions) help`: `4`
+
+      Lowest priority: `1`.
+   1. the second element of type `string` is used as a `(flatOptions) command`.
+
+**Default value**:
+
+```nix
+{ }
+```
+
+**Type**: `null or ((nested (max depth is 100) attribute set of (string or (list with two elements of types: [ string string ]))))`
+
+**Declared in**:
+
+- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
+
+### `commands.<name>.*.expose (nestedOptions)`
+
+When `true`, all `packages` can be added to the environment.
+
+Otherwise, they can not be added to the environment,
+but will be printed in the devshell description.
+
+Priority of this option when selecting a `(flatOptions) expose`: `2`.
+
+Lowest priority: `1`.
+
+**Default value**:
+
+```nix
+false
+```
+
+**Type**: `null or boolean`
+
+**Example value**:
+
+```nix
+{
+  expose = true;
+}
+```
+
+**Declared in**:
+
+- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
+
+### `commands.<name>.*.exposes (nestedOptions)`
+
+A nested (max depth is 100) attrset of `(flatOptions) expose`-s.
+
+A leaf value can be used as `(flatOptions) expose` 
+for a `(flatOptions) package` (`(flatOptions) command`)
+with a matching path in `(nestedOptions) packages` (`(nestedOptions) commands`).
+
+Priority of this option when selecting a `(flatOptions) expose`: `3`.
+
+Lowest priority: `1`.
+
+**Default value**:
+
+```nix
+{ }
+```
+
+**Type**: `null or ((nested (max depth is 100) attribute set of boolean))`
+
+**Example value**:
+
+```nix
+{
+  packages.a.b = pkgs.jq;
+  exposes.a.b = true;
+}
+```
+
+**Declared in**:
+
+- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
+
+### `commands.<name>.*.help (nestedOptions)`
+
+Priority of this option when selecting a `(flatOptions) help`: `1`.
+
+Lowest priority: `1`.
+
+**Default value**:
+
+```nix
+""
+```
+
+**Type**: `null or string`
+
+**Example value**:
+
+```nix
+{
+  help = "default help";
+}
+```
+
+**Declared in**:
+
+- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
+
+### `commands.<name>.*.helps (nestedOptions)`
+
+A leaf value can be used as `(flatOptions) help`
+for a `(flatOptions) package` (`(flatOptions) command`) 
+with a matching path in `(nestedOptions) packages` (`(nestedOptions) commands`).
+
+Priority of this option when selecting a `(flatOptions) help`: `3`.
+
+Lowest priority: `1`.
+
+**Default value**:
+
+```nix
+{ }
+```
+
+**Type**: `null or ((nested (max depth is 100) attribute set of string))`
+
+**Example value**:
+
+```nix
+{
+  packages.a.b = pkgs.jq;
+  helps.a.b = "run jq";
+}
+```
+
+**Declared in**:
+
+- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
+
+### `commands.<name>.*.prefix (nestedOptions)`
+
+Possible `(flatOptions) prefix`.
+
+Priority of this option when selecting a prefix: `1`.
+
+Lowest priority: `1`.
+
+**Default value**:
+
+```nix
+""
+```
+
+**Type**: `null or string`
+
+**Example value**:
+
+```nix
+{
+  prefix = "nix run .#";
+}
+```
+
+**Declared in**:
+
+- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
+
+### `commands.<name>.*.prefixes (nestedOptions)`
+
+A leaf value becomes a `(flatOptions) prefix`
+of a `package` (`command`) with a matching path in `packages` (`commands`).
+
+Priority of this option when selecting a prefix: `2`.
+
+Lowest priority: `1`.
+
+**Default value**:
+
+```nix
+{ }
+```
+
+**Type**: `null or ((nested (max depth is 100) attribute set of string))`
+
+**Example value**:
+
+```nix
+{
+  packages.a.b = pkgs.jq;
+  prefixes.a.b = "nix run ../#";
+}
+```
+
+**Declared in**:
+
+- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
+
+### `commands.<name>.*.package (flatOptions)`
+
+Used to bring in a specific package. This package will be added to the
+environment.
+
+**Default value**:
+
+```nix
+null
+```
+
+**Type**: `null or (package or string convertible to it) or package`
+
+**Declared in**:
+
+- [nix/commands/flatOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/flatOptions.nix)
+
 ### `commands.<name>.*.category (flatOptions)`
 
-Set a free text category under which this command is grouped
-and shown in the help menu.
+Sets a free text category under which this command is grouped
+and shown in the devshell menu.
 
 **Default value**:
 
@@ -146,43 +360,9 @@ null
 
 - [nix/commands/flatOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/flatOptions.nix)
 
-### `commands.<name>.*.commands (nestedOptions)`
-
-A nested (max depth is 100) attrset of `flatOptions.command`-s
-to describe in the devshell menu
-and bring to the environment.
-
-A path to a leaf value is concatenated via `.`
-and used in the `flatOptions.name`.
-
-A leaf value can be of two types.
-  
-1. When a `string`, it's used as a `flatOptions.command`.
-
-2. When a list with two elements:
-   1. the first element of type `string` with a value `<string>`
-      that is used to select a `help`;
-
-      Priority of the `<string>` (if present) when selecting a `flatOptions.help`: `4`
-
-      Lowest priority: `1`.
-   1. the second element of type `string` is used as a `command`.
-
-**Default value**:
-
-```nix
-{ }
-```
-
-**Type**: `null or ((nested (max depth is 100) attribute set of (string or (list with two elements of types: [ string string ]))))`
-
-**Declared in**:
-
-- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
-
 ### `commands.<name>.*.expose (flatOptions)`
 
-When `true`, the `command` or the `package` will be added to the environment.
+When `true`, the `(flatOptions) command` or the `(flatOptions) package` will be added to the environment.
   
 Otherwise, they will not be added to the environment, but will be printed
 in the devshell description.
@@ -198,68 +378,6 @@ true
 **Declared in**:
 
 - [nix/commands/flatOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/flatOptions.nix)
-
-### `commands.<name>.*.expose (nestedOptions)`
-
-When `true`, all `packages` can be added to the environment.
-
-Otherwise, they can not be added to the environment,
-but will be printed in the devshell description.
-
-Priority of this option when selecting a `flatOptions.expose`: `2`.
-
-Lowest priority: `1`.
-
-**Default value**:
-
-```nix
-false
-```
-
-**Type**: `null or boolean`
-
-**Example value**:
-
-```nix
-{
-  expose = true;
-}
-```
-
-**Declared in**:
-
-- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
-
-### `commands.<name>.*.exposes (nestedOptions)`
-
-A nested (max depth is 100) attrset of `flatOptions.expose`-s.
-
-A leaf value can be used as `flatOptions.expose` for a `package` (`command`) with a matching path in `packages` (`commands`).
-
-Priority of this option when selecting a `flatOptions.expose`: `3`.
-
-Lowest priority: `1`.
-
-**Default value**:
-
-```nix
-{ }
-```
-
-**Type**: `null or ((nested (max depth is 100) attribute set of boolean))`
-
-**Example value**:
-
-```nix
-{
-  packages.a.b = pkgs.jq;
-  exposes.a.b = true;
-}
-```
-
-**Declared in**:
-
-- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
 
 ### `commands.<name>.*.help (flatOptions)`
 
@@ -277,64 +395,13 @@ null
 
 - [nix/commands/flatOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/flatOptions.nix)
 
-### `commands.<name>.*.help (nestedOptions)`
-
-Priority of this option when selecting a `flatOptions.help`: `1`.
-
-Lowest priority: `1`.
-
-**Default value**:
-
-```nix
-"no help message provided :("
-```
-
-**Type**: `null or string`
-
-**Example value**:
-
-```nix
-{
-  help = "default help";
-}
-```
-
-**Declared in**:
-
-- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
-
-### `commands.<name>.*.helps (nestedOptions)`
-
-A leaf value can be used as `flatOptions.help` for a `package` (`command`) with a matching path in `packages` (`commands`).
-
-Priority of this option when selecting a `flatOptions.help`: `3`.
-
-Lowest priority: `1`.
-
-**Default value**:
-
-```nix
-{ }
-```
-
-**Type**: `null or ((nested (max depth is 100) attribute set of string))`
-
-**Example value**:
-
-```nix
-{
-  packages.a.b = pkgs.jq;
-  helps.a.b = "run jq";
-}
-```
-
-**Declared in**:
-
-- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
-
 ### `commands.<name>.*.name (flatOptions)`
 
-Name of this command. Defaults to attribute name in commands.
+Name of this command. 
+
+Defaults to a `(flatOptions) package` name or pname if present.
+
+The value of this option is required for a `(flatOptions) command`.
 
 **Default value**:
 
@@ -348,13 +415,9 @@ null
 
 - [nix/commands/flatOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/flatOptions.nix)
 
-### `commands.<name>.*.prefix (nestedOptions)`
+### `commands.<name>.*.prefix (flatOptions)`
 
-Possible prefix of a `flatOptions.name`.
-  
-Priority of this option when selecting a prefix: `1`.
-
-Lowest priority: `1`.
+Prefix of the command name in the devshell menu.
 
 **Default value**:
 
@@ -362,48 +425,11 @@ Lowest priority: `1`.
 ""
 ```
 
-**Type**: `null or string`
-
-**Example value**:
-
-```nix
-{
-  prefix = "nix run .#";
-}
-```
+**Type**: `string`
 
 **Declared in**:
 
-- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
-
-### `commands.<name>.*.prefixes (nestedOptions)`
-
-A leaf value becomes a prefix of a `flatOptions.name` of a `package` (`command`) with a matching path in `packages` (`commands`).
-
-Priority of this option when selecting a prefix: `2`.
-
-Lowest priority: `1`.
-
-**Default value**:
-
-```nix
-{ }
-```
-
-**Type**: `null or ((nested (max depth is 100) attribute set of string))`
-
-**Example value**:
-
-```nix
-{
-  packages.a.b = pkgs.jq;
-  prefixes.a.b = "nix run ../#";
-}
-```
-
-**Declared in**:
-
-- [nix/commands/nestedOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/nestedOptions.nix)
+- [nix/commands/flatOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/flatOptions.nix)
 
 ## Available in `Nix` and `TOML`
 
@@ -417,7 +443,7 @@ Add commands to the environment.
 [ ]
 ```
 
-**Type**: `(list of ((package or string convertible to it) or (list with two elements of types: [ string (package or string convertible to it) ]) or (list with two elements of types: [ string string ]) or (flatOptions))) or (attribute set of list of ((package or string convertible to it) or (list with two elements of types: [ string (package or string convertible to it) ]) or (list with two elements of types: [ string string ]) or (nestedOptions) or (flatOptions)))`
+**Type**: `(list of ((package or string convertible to it) or (list with two elements of types: [ string (package or string convertible to it) ]) or (flatOptions))) or (attribute set of list of ((package or string convertible to it) or (list with two elements of types: [ string (package or string convertible to it) ]) or (nestedOptions) or (flatOptions)))`
 
 **Example value**:
 
@@ -445,7 +471,7 @@ Add commands to the environment.
 
 A config for a command when the `commands` option is a list ("flat").
 
-**Type**: `(package or string convertible to it) or (list with two elements of types: [ string (package or string convertible to it) ]) or (list with two elements of types: [ string string ]) or (flatOptions)`
+**Type**: `(package or string convertible to it) or (list with two elements of types: [ string (package or string convertible to it) ]) or (flatOptions)`
 
 **Example value**:
 
@@ -483,8 +509,8 @@ null
 
 ### `commands.*.category (flatOptions)`
 
-Set a free text category under which this command is grouped
-and shown in the help menu.
+Sets a free text category under which this command is grouped
+and shown in the devshell menu.
 
 **Default value**:
 
@@ -529,7 +555,7 @@ null
 
 ### `commands.*.expose (flatOptions)`
 
-When `true`, the `command` or the `package` will be added to the environment.
+When `true`, the `(flatOptions) command` or the `(flatOptions) package` will be added to the environment.
   
 Otherwise, they will not be added to the environment, but will be printed
 in the devshell description.
@@ -564,7 +590,11 @@ null
 
 ### `commands.*.name (flatOptions)`
 
-Name of this command. Defaults to attribute name in commands.
+Name of this command. 
+
+Defaults to a `(flatOptions) package` name or pname if present.
+
+The value of this option is required for a `(flatOptions) command`.
 
 **Default value**:
 
@@ -573,6 +603,22 @@ null
 ```
 
 **Type**: `null or string`
+
+**Declared in**:
+
+- [nix/commands/flatOptions.nix](https://github.com/numtide/devshell/tree/main/nix/commands/flatOptions.nix)
+
+### `commands.*.prefix (flatOptions)`
+
+Prefix of the command name in the devshell menu.
+
+**Default value**:
+
+```nix
+""
+```
+
+**Type**: `string`
 
 **Declared in**:
 
