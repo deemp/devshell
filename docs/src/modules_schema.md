@@ -2,6 +2,8 @@
 
 ## Available only in `Nix`
 
+See how `commands.<name>` ([link](https://github.com/numtide/devshell/tree/main/nix/commands/examples.nix)) maps to `commands.*` ([link](https://github.com/numtide/devshell/tree/main/tests/extra/lib.flattenCommands.nix)).
+
 ### `commands.<name>.*`
 
 A config for command(s) when the `commands` option is an attrset.
@@ -469,7 +471,7 @@ Add commands to the environment.
 
 ### `commands.*`
 
-A config for a command when the `commands` option is a list ("flat").
+A config for a command when the `commands` option is a list.
 
 **Type**: `(package or string convertible to it) or (list with two elements of types: [ string (package or string convertible to it) ]) or (flatOptions)`
 
