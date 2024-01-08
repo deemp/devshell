@@ -47,6 +47,8 @@ let
     in
     map (p: repack (unpack p));
 
+  mkUrl = root: path: "${root.url}/tree/${root.branch}/${path}";
+
   # Transforms a module path into a (path, url) tuple where path is relative
   # to the repo root, and URL points to an online view of the module.
   mkDeclaration =
@@ -69,7 +71,7 @@ let
     else
       rec {
         path = removePrefix root.prefix decl;
-        url = "${root.url}/tree/${root.branch}/${path}";
+        url = mkUrl root path;
       };
 
   # Sort modules and put "enable" and "package" declarations first.
@@ -114,7 +116,11 @@ let
       )
   );
 
-  inherit (import ../nix/commands/lib.nix { inherit pkgs; }) mkLocLast nestedOptionsType;
+  inherit (import ../nix/commands/lib.nix { inherit pkgs; })
+    mkLocLast
+    nestedOptionsType
+    flatOptionsType
+    ;
 
   # TODO: display values like TOML instead.
   toMarkdown = optionsDocs:
@@ -174,6 +180,16 @@ let
       doc = [
         "# `devshell` options\n"
         "## Available only in `Nix`\n"
+        (
+          let
+            root = head cfg.roots;
+            path = "nix/commands/examples.nix";
+            mkLink = path: "[link](${mkUrl root path})";
+          in
+          ''
+            See how `commands.<name>` (${mkLink "nix/commands/examples.nix"}) maps to `commands.*` (${mkLink "tests/extra/lib.flattenCommands.nix"}).
+          ''
+        )
         (concatStringsSep "\n" (map optToMd nixOnly_))
         "## Available in `Nix` and `TOML`\n"
         (concatStringsSep "\n" (map optToMd nixTOML))
