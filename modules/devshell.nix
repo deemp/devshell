@@ -1,7 +1,14 @@
-{ config, lib, pkgs, options, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  options,
+  ...
+}:
 with lib;
 let
   cfg = config.devshell;
+  sanitizedName = strings.sanitizeDerivationName cfg.name;
 
   ansi = import ../nix/ansi.nix;
 
@@ -20,7 +27,8 @@ let
     program = "${bin}";
   };
 
-  mkSetupHook = rc:
+  mkSetupHook =
+    rc:
     pkgs.stdenvNoCC.mkDerivation {
       name = "devshell-setup-hook";
       setupHook = pkgs.writeText "devshell-setup-hook.sh" ''
@@ -33,13 +41,18 @@ let
 
   mkNakedShell = pkgs.callPackage ../nix/mkNakedShell.nix { };
 
-  addAttributeName = prefix:
-    mapAttrs (k: v: v // {
-      text = ''
-        #### ${prefix}.${k}
-        ${v.text}
-      '';
-    });
+  addAttributeName =
+    prefix:
+    mapAttrs (
+      k: v:
+      v
+      // {
+        text = ''
+          #### ${prefix}.${k}
+          ${v.text}
+        '';
+      }
+    );
 
   entryOptions = {
     text = mkOption {
@@ -93,7 +106,6 @@ let
 
     fi # Interactive session
   '';
-
 
   # This is our entrypoint script.
   entrypoint = pkgs.writeScript "${cfg.name}-entrypoint" ''
@@ -188,24 +200,42 @@ let
   '';
 
   # Builds the DEVSHELL_DIR with all the dependencies
-  devshell_dir = pkgs.buildEnv {
-    name = "devshell-dir";
+  devshell_dir = pkgs.buildEnv rec {
+    name = "${sanitizedName}-dir";
     paths = cfg.packages;
     postBuild = ''
       substitute ${envBash} $out/env.bash --subst-var-by DEVSHELL_DIR $out
       substitute ${entrypoint} $out/entrypoint --subst-var-by DEVSHELL_DIR $out
       chmod +x $out/entrypoint
+
+      mainProgram="${meta.mainProgram}"
+      # ensure mainProgram doesn't collide
+      if [ -e "$out/bin/$mainProgram" ]; then
+        echo "Warning: Cannot create entry point for this devshell at '\$out/bin/$mainProgram' because an executable with that name already exists." >&2
+        echo "Set meta.mainProgram to something else than '$mainProgram'." >&2
+      else
+        # if $out/bin is a single symlink, transform it into a directory tree
+        # (buildEnv does that when there is only one package in the environment)
+        if [ -L "$out/bin" ]; then
+          mv "$out/bin" bin-tmp
+          mkdir "$out/bin"
+          ln -s bin-tmp/* "$out/bin/"
+        fi
+        ln -s $out/entrypoint "$out/bin/$mainProgram"
+      fi
     '';
+    meta.mainProgram = config.meta.mainProgram or sanitizedName;
   };
 
   # Returns a list of all the input derivation ... for a derivation.
-  inputsOf = drv:
-    filter lib.isDerivation
-      ((drv.buildInputs or [ ]) ++
-        (drv.nativeBuildInputs or [ ]) ++
-        (drv.propagatedBuildInputs or [ ]) ++
-        (drv.propagatedNativeBuildInputs or [ ]))
-  ;
+  inputsOf =
+    drv:
+    filter lib.isDerivation (
+      (drv.buildInputs or [ ])
+      ++ (drv.nativeBuildInputs or [ ])
+      ++ (drv.propagatedBuildInputs or [ ])
+      ++ (drv.propagatedNativeBuildInputs or [ ])
+    );
 
 in
 {
@@ -260,9 +290,7 @@ in
         {202}🔨 Welcome to ${cfg.name}{reset}
         $(type -p ${devshellMenuCommandName} &>/dev/null && ${devshellMenuCommandName})
       '';
-      apply = replaceStrings
-        (map (key: "{${key}}") (attrNames ansi))
-        (attrValues ansi);
+      apply = replaceStrings (map (key: "{${key}}") (attrNames ansi)) (attrValues ansi);
       description = ''
         Message Of The Day.
 
@@ -325,7 +353,9 @@ in
         in
         types.nullOr (types.coercedTo types.nonEmptyStr coerceFunc envType);
       apply = x: if x == null then x else x // { name = "PRJ_ROOT"; };
-      default = { eval = "$PWD"; };
+      default = {
+        eval = "$PWD";
+      };
       example = lib.literalExpression ''
         {
           # Use the top-level directory of the working tree
@@ -379,41 +409,43 @@ in
 
     packages = foldl' (sum: drv: sum ++ (inputsOf drv)) [ ] cfg.packagesFrom;
 
-    startup = {
-      motd = noDepEntry ''
-        __devshell-motd() {
-          cat <<DEVSHELL_PROMPT
-        ${cfg.motd}
-        DEVSHELL_PROMPT
-        }
-
-        if [[ ''${DEVSHELL_NO_MOTD:-} = 1 ]]; then
-          # Skip if that env var is set
-          :
-        elif [[ ''${DIRENV_IN_ENVRC:-} = 1 ]]; then
-          # Print the motd in direnv
-          __devshell-motd
-        else
-          # Print information if the prompt is displayed. We have to make
-          # that distinction because `nix-shell -c "cmd"` is running in
-          # interactive mode.
-          __devshell-prompt() {
-            __devshell-motd
-            # Make it a noop
-            __devshell-prompt() { :; }
+    startup =
+      {
+        motd = noDepEntry ''
+          __devshell-motd() {
+            cat <<DEVSHELL_PROMPT
+          ${cfg.motd}
+          DEVSHELL_PROMPT
           }
-          PROMPT_COMMAND=__devshell-prompt''${PROMPT_COMMAND+;$PROMPT_COMMAND}
-        fi
-      '';
-    } // (optionalAttrs cfg.load_profiles {
-      load_profiles = lib.noDepEntry ''
-        # Load installed profiles
-        for file in "$DEVSHELL_DIR/etc/profile.d/"*.sh; do
-          # If that folder doesn't exist, bash loves to return the whole glob
-          [[ -f "$file" ]] && source "$file"
-        done
-      '';
-    });
+
+          if [[ ''${DEVSHELL_NO_MOTD:-} = 1 ]]; then
+            # Skip if that env var is set
+            :
+          elif [[ ''${DIRENV_IN_ENVRC:-} = 1 ]]; then
+            # Print the motd in direnv
+            __devshell-motd
+          else
+            # Print information if the prompt is displayed. We have to make
+            # that distinction because `nix-shell -c "cmd"` is running in
+            # interactive mode.
+            __devshell-prompt() {
+              __devshell-motd
+              # Make it a noop
+              __devshell-prompt() { :; }
+            }
+            PROMPT_COMMAND=__devshell-prompt''${PROMPT_COMMAND+;$PROMPT_COMMAND}
+          fi
+        '';
+      }
+      // (optionalAttrs cfg.load_profiles {
+        load_profiles = lib.noDepEntry ''
+          # Load installed profiles
+          for file in "$DEVSHELL_DIR/etc/profile.d/"*.sh; do
+            # If that folder doesn't exist, bash loves to return the whole glob
+            [[ -f "$file" ]] && source "$file"
+          done
+        '';
+      });
 
     interactive = {
       PS1_util = noDepEntry ''
@@ -435,24 +467,32 @@ in
       '';
 
       # Set a cool PS1
-      PS1 = stringAfter [ "PS1_util" ] (lib.mkDefault ''
-        __set_prompt() {
-          PS1='\[\033[38;5;202m\][${cfg.name}]$(rel_root)\$\[\033[0m\] '
-        }
-        # Only set the prompt when entering a nix shell, since nix shells
-        # always reset to plain bash, otherwise respect the user's preferences
-        [[ -n "''${IN_NIX_SHELL:-}" ]] && __set_prompt
-        unset -f __set_prompt
-      '');
+      PS1 = stringAfter [ "PS1_util" ] (
+        lib.mkDefault ''
+          __set_prompt() {
+            PS1='\[\033[38;5;202m\][${cfg.name}]$(rel_root)\$\[\033[0m\] '
+          }
+          # Only set the prompt when entering a nix shell, since nix shells
+          # always reset to plain bash, otherwise respect the user's preferences
+          [[ -n "''${IN_NIX_SHELL:-}" ]] && __set_prompt
+          unset -f __set_prompt
+        ''
+      );
     };
 
     # Use a naked derivation to limit the amount of noise passed to nix-shell.
     shell = mkNakedShell {
-      name = strings.sanitizeDerivationName cfg.name;
-      inherit (cfg) meta;
+      name = sanitizedName;
+      meta =
+        # set default for meta.mainProgram here to gain compatibility with:
+        #  `lib.getExe`, `nix run`, `nix bundle`, etc.
+        {
+          mainProgram = cfg.package.meta.mainProgram;
+        } // cfg.meta;
       profile = cfg.package;
       passthru = {
         inherit config;
+        # keep flakeApp attribute for backward compatibility
         flakeApp = mkFlakeApp "${devshell_dir}/entrypoint";
         hook = mkSetupHook "${devshell_dir}/env.bash";
         inherit (config._module.args) pkgs;

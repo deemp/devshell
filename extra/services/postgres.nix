@@ -3,7 +3,12 @@
 #
 # To start the server, invoke `postgres` in one devshell. Then start a second
 # devshell to run the clients.
-{ lib, pkgs, config, ... }:
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}:
 with lib;
 let
   # Because we want to be able to push pure JSON-like data into the
@@ -61,7 +66,10 @@ in
     initdbArgs = mkOption {
       type = with types; listOf str;
       default = [ "--no-locale" ];
-      example = [ "--data-checksums" "--allow-group-access" ];
+      example = [
+        "--data-checksums"
+        "--allow-group-access"
+      ];
       description = ''
         Additional arguments passed to `initdb` during data dir
         initialisation.
@@ -72,8 +80,6 @@ in
   config = {
     packages = [
       cfg.package
-      setup-postgres
-      start-postgres
     ];
 
     env = [
@@ -90,5 +96,19 @@ in
     devshell.startup.setup-postgres.text = lib.optionalString cfg.setupPostgresOnStartup ''
       ${setup-postgres}/bin/setup-postgres
     '';
+
+    commands = [
+      {
+        name = "setup-postgres";
+        package = setup-postgres;
+        help = "Setup the postgres data directory";
+      }
+      {
+        name = "start-postgres";
+        package = start-postgres;
+        help = "Start the postgres server";
+        category = "databases";
+      }
+    ];
   };
 }

@@ -1,7 +1,13 @@
 # MIT - Copyright (c) 2017-2019 Robert Helgesson and Home Manager contributors.
 #
 # This is an adapted version of the original https://gitlab.com/rycee/nmd/
-{ lib, pkgs, options, config, modulesPath, ... }:
+{
+  lib,
+  pkgs,
+  options,
+  config,
+  ...
+}:
 with lib;
 let
   cfg = config.modules-docs;
@@ -16,7 +22,8 @@ let
   #   (either of `name`, `path` is required, the rest are optional).
   mkRelatedPackages =
     let
-      unpack = p:
+      unpack =
+        p:
         if isString p then
           { name = p; }
         else if isList p then
@@ -24,26 +31,27 @@ let
         else
           p;
 
-      repack = args:
+      repack =
+        args:
         let
           name = args.name or (concatStringsSep "." args.path);
           path = args.path or [ args.name ];
-          pkg = args.package or (
-            let
-              bail = throw "Invalid package attribute path '${toString path}'";
-            in
-            attrByPath path bail pkgs
-          );
+          pkg =
+            args.package or (
+              let
+                bail = throw "Invalid package attribute path '${toString path}'";
+              in
+              attrByPath path bail pkgs
+            );
         in
         {
           attrName = name;
           packageName = pkg.meta.name;
           available = pkg.meta.available;
-        } // optionalAttrs (pkg.meta ? description) {
-          inherit (pkg.meta) description;
-        } // optionalAttrs (pkg.meta ? longDescription) {
-          inherit (pkg.meta) longDescription;
-        } // optionalAttrs (args ? comment) { inherit (args) comment; };
+        }
+        // optionalAttrs (pkg.meta ? description) { inherit (pkg.meta) description; }
+        // optionalAttrs (pkg.meta ? longDescription) { inherit (pkg.meta) longDescription; }
+        // optionalAttrs (args ? comment) { inherit (args) comment; };
     in
     map (p: repack (unpack p));
 
@@ -53,21 +61,19 @@ let
   # to the repo root, and URL points to an online view of the module.
   mkDeclaration =
     let
-      rootsWithPrefixes = map
-        (p: p // { prefix = "${toString p.path}/"; })
-        cfg.roots;
+      rootsWithPrefixes = map (p: p // { prefix = "${toString p.path}/"; }) cfg.roots;
     in
     decl:
     let
-      root = lib.findFirst
-        (x: lib.hasPrefix x.prefix decl)
-        null
-        rootsWithPrefixes;
+      root = lib.findFirst (x: lib.hasPrefix x.prefix decl) null rootsWithPrefixes;
     in
     if root == null then
-    # We need to strip references to /nix/store/* from the options or
-    # else the build will fail.
-      { path = removePrefix "${builtins.storeDir}/" decl; url = ""; }
+      # We need to strip references to /nix/store/* from the options or
+      # else the build will fail.
+      {
+        path = removePrefix "${builtins.storeDir}/" decl;
+        url = "";
+      }
     else
       rec {
         path = removePrefix root.prefix decl;
@@ -75,7 +81,8 @@ let
       };
 
   # Sort modules and put "enable" and "package" declarations first.
-  moduleDocCompare = a: b:
+  moduleDocCompare =
+    a: b:
     let
       isEnable = lib.hasPrefix "enable";
       isPackage = lib.hasPrefix "package";
@@ -85,7 +92,8 @@ let
     compareLists moduleCmp (map toString a.loc) (map toString b.loc) < 0;
 
   # Replace functions by the string <function>
-  substFunction = x:
+  substFunction =
+    x:
     if builtins.isAttrs x then
       mapAttrs (name: substFunction) x
     else if builtins.isList x then
@@ -95,7 +103,8 @@ let
     else
       x;
 
-  cleanUpOption = opt:
+  cleanUpOption =
+    opt:
     let
       applyOnAttr = n: f: optionalAttrs (hasAttr n opt) { ${n} = f opt.${n}; };
     in
@@ -107,20 +116,15 @@ let
     // applyOnAttr "relatedPackages" mkRelatedPackages;
 
   optionsDocs = map cleanUpOption (
-    sort
-      moduleDocCompare
-      (
-        filter
-          (opt: opt.visible && !opt.internal)
-          (optionAttrSetToDocList options)
-      )
+    sort moduleDocCompare (filter (opt: opt.visible && !opt.internal) (optionAttrSetToDocList options))
   );
 
   inherit (import ../nix/commands/lib.nix { inherit pkgs options; })
     mkLocSuffix nestedOptionsType flatOptionsType;
 
   # TODO: display values like TOML instead.
-  toMarkdown = optionsDocs:
+  toMarkdown =
+    optionsDocs:
     let
       optionsDocsPartitionedIsMain = partition (opt: head opt.loc != "_module") optionsDocs;
       nixOnlyLocPrefix = [ "commands" "<name>" ];
@@ -145,15 +149,15 @@ let
         + ''
 
           **Type**:
-          
+
           ```console
           ${opt.type}
           ```
         ''
         + (lib.optionalString (opt ? default && opt.default != null) ''
-          
+
           **Default value**:
-          
+
           ```nix
           ${removeSuffix "\n" opt.default.text}
           ```
@@ -161,7 +165,7 @@ let
         + (lib.optionalString (opt ? example) ''
 
           **Example value**:
-          
+
           ```nix
           ${removeSuffix "\n" opt.example.text}
           ```

@@ -1,11 +1,12 @@
-{ bashInteractive
-, coreutils
-, system
-, writeTextFile
+{
+  bashInteractive,
+  coreutils,
+  stdenv,
+  writeTextFile,
 }:
 let
   bashPath = "${bashInteractive}/bin/bash";
-  stdenv = writeTextFile {
+  nakedStdenv = writeTextFile {
     name = "naked-stdenv";
     destination = "/setup";
     text = ''
@@ -19,25 +20,31 @@ let
     '';
   };
 in
-{ name
-, # A path to a buildEnv that will be loaded by the shell.
+{
+  name,
+  # A path to a buildEnv that will be loaded by the shell.
   # We assume that the buildEnv contains an ./env.bash script.
-  profile
-, meta ? { }
-, passthru ? { }
+  profile,
+  meta ? { },
+  passthru ? { },
 }:
 (derivation {
-  inherit name system;
+  inherit name;
+
+  system = stdenv.hostPlatform.system;
 
   # `nix develop` actually checks and uses builder. And it must be bash.
   builder = bashPath;
 
   # Bring in the dependencies on `nix-build`
-  args = [ "-ec" "${coreutils}/bin/ln -s ${profile} $out; exit 0" ];
+  args = [
+    "-ec"
+    "${coreutils}/bin/ln -s ${profile} $out; exit 0"
+  ];
 
   # $stdenv/setup is loaded by nix-shell during startup.
   # https://github.com/nixos/nix/blob/377345e26f1ac4bbc87bb21debcc52a1d03230aa/src/nix-build/nix-build.cc#L429-L432
-  stdenv = stdenv;
+  stdenv = nakedStdenv;
 
   # The shellHook is loaded directly by `nix develop`. But nix-shell
   # requires that other trampoline.
@@ -58,4 +65,8 @@ in
     # Load the environment
     source "${profile}/env.bash"
   '';
-}) // { inherit meta passthru; } // passthru
+})
+// {
+  inherit meta passthru;
+}
+// passthru

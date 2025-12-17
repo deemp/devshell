@@ -24,9 +24,7 @@ let inherit (import ../../nix/commands/lib.nix { inherit pkgs; }) devshellMenuCo
               print("hello-python")
             '';
           }
-          {
-            package = "git";
-          }
+          { package = "git"; }
         ];
       };
     in

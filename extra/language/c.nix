@@ -1,4 +1,9 @@
-{ lib, config, pkgs, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 let
   cfg = config.language.c;
   strOrPackage = import ../../nix/strOrPackage.nix { inherit lib pkgs; };
@@ -32,18 +37,24 @@ with lib;
   config = {
     devshell.packages =
       [ cfg.compiler ]
+      ++ (lib.optionals hasLibraries (map lib.getLib cfg.libraries))
       ++
-      (lib.optionals hasLibraries (map lib.getLib cfg.libraries))
-      ++
-      # Assume we want pkg-config, because it's good
-      (lib.optionals hasIncludes ([ pkgs.pkg-config ] ++ (map lib.getDev cfg.includes)))
-    ;
+        # Assume we want pkg-config, because it's good
+        (lib.optionals hasIncludes ([ pkgs.pkg-config ] ++ (map lib.getDev cfg.includes)));
 
     env =
       (lib.optionals hasLibraries [
         {
           name = "LD_LIBRARY_PATH";
           prefix = "$DEVSHELL_DIR/lib";
+        }
+        {
+          name = "LDFLAGS";
+          eval = "-L$DEVSHELL_DIR/lib";
+        }
+        {
+          name = "LIBRARY_PATH";
+          eval = "-L$DEVSHELL_DIR/lib";
         }
       ])
       ++ lib.optionals hasIncludes [
