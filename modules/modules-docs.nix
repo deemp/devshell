@@ -122,7 +122,6 @@ let
   inherit (import ../nix/commands/lib.nix { inherit pkgs options; })
     mkLocSuffix
     nestedOptionsType
-    flatOptionsType
     ;
 
   # TODO: display values like TOML instead.

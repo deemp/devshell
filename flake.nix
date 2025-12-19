@@ -63,13 +63,13 @@
       );
 
       devShells = eachSystem (
-        { devshell, ... }:
+        { devshell, system, ... }:
         {
           default = devshell.mkShell {
             bash.extra = ''
               export MDBOOK_SERVER_ADDRESS="http://localhost:3000"
             '';
-            commands = {
+            commandGroups = {
               packages = [
                 "diffutils" # used by golangci-lint
                 "goreleaser"
@@ -77,7 +77,7 @@
               scripts = [
                 {
                   prefix = "nix run .#";
-                  inherit packages;
+                  packages = packages.${system};
                   helps.docs = ''Run mdBook server at "$MDBOOK_SERVER_ADDRESS"'';
                   interpolates.docs = true;
                 }
@@ -89,7 +89,7 @@
               utilites = [
                 [
                   "GitHub utility"
-                  "gitAndTools.hub"
+                  "hub"
                 ]
                 [
                   "golang linter"
@@ -111,10 +111,10 @@
         }
       );
 
-      apps.default = devShells.default.flakeApp;
+      # apps.default = devShells.default.flakeApp;
 
       checks = eachSystem (
-        { pkgs, ... }:
+        { devshell, pkgs, ... }:
         with pkgs.lib;
         pipe { } [
           (

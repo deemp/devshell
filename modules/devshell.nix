@@ -19,7 +19,10 @@ let
   # environment.
   strOrPackage = import ../nix/strOrPackage.nix { inherit lib pkgs; };
 
-  inherit (import ../nix/commands/lib.nix { inherit pkgs options; }) devshellMenuCommandName;
+  inherit (import ../nix/commands/lib.nix { inherit pkgs options; })
+    devshellMenuCommandName
+    commandsFlatType
+    ;
 
   # Use this to define a flake app for the environment.
   mkFlakeApp = bin: {
@@ -316,6 +319,15 @@ in
       default = { };
       description = ''
         Metadata, such as 'meta.description'. Can be useful as metadata for downstream tooling.
+      '';
+    };
+
+    commands = mkOption {
+      type = commandsFlatType;
+      internal = true;
+      default = [ ];
+      description = ''
+        Merged normalized `commands` and `commandGroups`.
       '';
     };
 

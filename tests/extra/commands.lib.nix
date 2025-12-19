@@ -11,8 +11,16 @@ in
     let
       commands = (import ../../nix/commands/examples.nix { inherit pkgs; }).nested;
       normalizedCommands =
-        (import ../../nix/commands/lib.nix { inherit pkgs; }).normalizeCommandsNested
-          commands;
+        let
+          inherit (import ../../nix/commands/lib.nix { inherit pkgs; })
+            normalizeCommandsNested'
+            mergeCommandsFlat
+            ;
+        in
+        mergeCommandsFlat {
+          arg = normalizeCommandsNested' commands;
+          file = ../../nix/commands/examples.nix;
+        };
       check =
         normalizedCommands == [
           {
@@ -49,7 +57,7 @@ in
             category = "category 1";
             command = null;
             expose = false;
-            help = "a package manager for JavaScript";
+            help = "Event-driven I/O framework for the V8 JavaScript engine";
             interpolate = null;
             name = "npm";
             package = pkgs.nodePackages.npm;

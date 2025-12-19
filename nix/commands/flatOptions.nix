@@ -20,16 +20,13 @@ in
 
   name = mkOption {
     type = types.nullOr (
-      types.str
-      // (
-        let
-          regex = "[^$\r\n]+";
-        in
-        {
-          description = "string matching ${regex}";
-          check = x: lib.isString x && match regex x != null;
-        }
-      )
+      let
+        regex = "[^$\r\n]+";
+      in
+      lib.types.addCheck types.str (x: lib.isString x && match regex x != null)
+      // {
+        description = "string matching ${regex}";
+      }
     );
     default = null;
     description = ''

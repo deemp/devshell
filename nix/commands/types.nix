@@ -105,30 +105,35 @@ rec {
       ;
   };
 
-  nestedOptionsType =
-    let
-      submodule = lib.types.submodule { options = nestedOptions; };
-    in
-    submodule
-    // rec {
-      name = "nestedOptions";
-      description = name;
-      check =
-        x: (x ? prefixes || x ? packages || x ? commands || x ? helps || x ? exposes) && submodule.check x;
-      getSubOptions =
-        prefix:
-        (lib.mapAttrs (
-          name_: value:
-          value
-          // {
-            loc = prefix ++ [
-              name_
-              (mkAttrsToString " (${name})")
-            ];
-            declarations = [ "${toString ../..}/nix/commands/nestedOptions.nix" ];
-          }
-        ) (submodule.getSubOptions prefix));
-    };
+  nestedOptionsType = lib.pipe (lib.types.submodule { options = nestedOptions; }) [
+    (
+      submodule:
+      lib.types.addCheck submodule (
+        x: (x ? prefixes || x ? packages || x ? commands || x ? helps || x ? exposes) && submodule.check x
+      )
+    )
+    (
+      submodule:
+      submodule
+      // rec {
+        name = "nestedOptions";
+        description = name;
+        getSubOptions =
+          prefix:
+          (lib.mapAttrs (
+            name_: value:
+            value
+            // {
+              loc = prefix ++ [
+                name_
+                (mkAttrsToString " (${name})")
+              ];
+              declarations = [ "${toString ../..}/nix/commands/nestedOptions.nix" ];
+            }
+          ) (submodule.getSubOptions prefix));
+      }
+    )
+  ];
 
   nestedConfigType =
     (lib.types.oneOf [

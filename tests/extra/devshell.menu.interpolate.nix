@@ -11,7 +11,7 @@
           interpolate = true;
           width = 200;
         };
-        commands.scripts = [
+        commandGroups.scripts = [
           {
             prefix = "hello";
             help = ''hello from "$PRJ_ROOT"!'';

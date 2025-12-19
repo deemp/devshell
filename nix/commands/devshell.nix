@@ -122,8 +122,6 @@ rec {
               ...
             }:
             let
-              len = maxCommandLength - (lib.stringLength name);
-
               nameWidth = toString maxCommandLength;
               helpWidth = toString (config.devshell.menu.width - (maxCommandLength + 5));
               helpHeight = toString 100;

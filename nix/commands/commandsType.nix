@@ -3,30 +3,36 @@
   pkgs ? import ../nixpkgs.nix { inherit system; },
   options ? { },
 }:
-with pkgs.lib;
-with builtins;
 let
+  inherit (builtins)
+    concatStringsSep
+    hasAttr
+    head
+    isAttrs
+    isList
+    isString
+    ;
+
+  inherit (pkgs.lib)
+    attrByPath
+    collect
+    flatten
+    isDerivation
+    last
+    mapAttrsRecursiveCond
+    mapAttrsToList
+    parseDrvName
+    pipe
+    ;
+
+  inherit (pkgs.lib.options) unknownModule;
+
   inherit (import ./types.nix { inherit pkgs options; })
     commandsFlatType
     commandsNestedType
     resolveKey
     strOrPackage
     ;
-in
-rec {
-  mergeDefs =
-    loc: defs:
-    let
-      t1 = commandsFlatType;
-      t2 = commandsNestedType;
-      defsFlat = t1.merge loc (map (d: d // { value = if isList d.value then d.value else [ ]; }) defs);
-      defsNested = t2.merge loc (
-        map (d: d // { value = if !(isList d.value) then d.value else { }; }) defs
-      );
-    in
-    {
-      inherit defsFlat defsNested;
-    };
 
   extractHelp = arg: if isList arg then head arg else null;
 
@@ -55,15 +61,13 @@ rec {
     else
       alternative;
 
-  normalizeCommandsFlat_ =
+  mergeCommandsFlat =
     {
-      file ? unknownModule,
+      arg,
       loc ? [ ],
-      arg ? [ ],
+      file ? unknownModule,
     }:
     pipe arg [
-      (value: (mergeDefs loc [ { inherit file value; } ]).defsFlat)
-      (map (config: flattenNonAttrsOrElse config config))
       flatten
       (map (value: {
         inherit file;
@@ -71,6 +75,10 @@ rec {
       }))
       (commandsFlatType.merge loc)
     ];
+
+  normalizeCommandsFlat' = map (config: flattenNonAttrsOrElse config config);
+
+  normalizeCommandsFlat = arg: mergeCommandsFlat { arg = normalizeCommandsFlat' arg; };
 
   highlyUnlikelyAttrName = "adjd-laso-msle-copq-pcod";
 
@@ -89,15 +97,21 @@ rec {
       (map (x: x.${highlyUnlikelyAttrName}))
     ];
 
-  normalizeCommandsNested_ =
-    {
-      file ? unknownModule,
-      loc ? [ ],
-      arg ? { },
-    }:
+  normalizeCommandsNested' =
+    arg:
     pipe arg [
       # typecheck and augment configs with missing attributes (if a config is an attrset)
-      (value: (mergeDefs loc [ { inherit file value; } ]).defsNested)
+      (
+        x:
+        commandsNestedType.merge
+          [ ]
+          [
+            {
+              file = unknownModule;
+              value = x;
+            }
+          ]
+      )
       (mapAttrsToList (
         category:
         map (
@@ -166,44 +180,21 @@ rec {
           )
         )
       ))
-      flatten
-      (map (value: {
-        inherit file;
-        value = [ value ];
-      }))
-      (commandsFlatType.merge loc)
     ];
 
-  normalizeCommandsNested = arg: normalizeCommandsNested_ { inherit arg; };
-
-  commandsType =
-    let
-      t1 = commandsFlatType;
-      t2 = commandsNestedType;
-      either = types.either t1 t2;
-    in
-    either
-    // rec {
-      name = "commandsType";
-      description = "(${t1.description}) or (${t2.description})";
-      merge =
-        loc: defs:
-        let
-          inherit (mergeDefs loc defs) defsFlat defsNested;
-          defsFlatNormalized = normalizeCommandsFlat_ {
-            arg = defsFlat;
-            inherit loc;
-          };
-          defsNestedNormalized = normalizeCommandsNested_ {
-            arg = defsNested;
-            inherit loc;
-          };
-          defsMerged = defsFlatNormalized ++ defsNestedNormalized;
-        in
-        defsMerged;
-      getSubOptions = prefix: {
-        "${t1.name}" = t1.getSubOptions prefix;
-        "${t2.name}" = t2.getSubOptions prefix;
-      };
-    };
+  normalizeCommandsNested = arg: mergeCommandsFlat { arg = normalizeCommandsNested' arg; };
+in
+{
+  inherit
+    extractHelp
+    resolveName
+    flattenNonAttrsOrElse
+    highlyUnlikelyAttrName
+    collectLeaves
+    mergeCommandsFlat
+    normalizeCommandsFlat'
+    normalizeCommandsFlat
+    normalizeCommandsNested'
+    normalizeCommandsNested
+    ;
 }

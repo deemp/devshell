@@ -8,7 +8,7 @@
     let
       shell = devshell.mkShell {
         devshell.name = "nested-commands-test";
-        commands = (import ../../nix/commands/examples.nix { inherit pkgs; }).nested;
+        commandGroups = (import ../../nix/commands/examples.nix { inherit pkgs; }).nested;
       };
     in
     runTest "nested" { } ''

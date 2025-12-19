@@ -7,16 +7,40 @@
 }:
 let
   inherit (import ../nix/commands/lib.nix { inherit pkgs options config; })
-    commandsType
-    commandToPackage
+    commandsFlatType
+    commandsNestedType
+    normalizeCommandsFlat
+    normalizeCommandsNested
     devshellMenuCommandName
+    commandToPackage
     commandsToMenu
     ;
 in
 {
   options.commands = lib.mkOption {
-    type = commandsType;
+    type = commandsFlatType;
     default = [ ];
+    description = ''
+      Add commands to the environment.
+    '';
+    example = lib.literalExpression ''
+      [
+        {
+          help = "print hello";
+          name = "hello";
+          command = "echo hello";
+        }
+        {
+          package = "nixfmt";
+          category = "formatter";
+        }
+      ]
+    '';
+  };
+
+  options.commandGroups = lib.mkOption {
+    type = commandsNestedType;
+    default = { };
     description = ''
       Add commands to the environment.
     '';
@@ -37,7 +61,7 @@ in
           }
         ];
         utilites = [
-          [ "GitHub utility" "gitAndTools.hub" ]
+          [ "GitHub utility" "hub" ]
           [ "golang linter" "golangci-lint" ]
         ];
       }
@@ -48,13 +72,18 @@ in
     {
       help = "prints this menu";
       name = devshellMenuCommandName;
-      command = commandsToMenu config.devshell.menu config.commands;
+      command = commandsToMenu config.devshell.menu config.devshell.commands;
     }
   ];
 
+  config.devshell.commands =
+    normalizeCommandsFlat config.commands ++ normalizeCommandsNested config.commandGroups;
+
   # Add the commands to the devshell packages. Either as wrapper scripts, or
   # the whole package.
-  config.devshell.packages = lib.filter (x: x != null) (map commandToPackage config.commands);
+  config.devshell.packages = lib.filter (x: x != null) (
+    map commandToPackage config.devshell.commands
+  );
 
   # config.devshell.motd = "$(motd)";
 }
