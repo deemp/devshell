@@ -1,5 +1,11 @@
-{ pkgs, devshell, runTest }:
-let inherit (import ../../nix/commands/lib.nix { inherit pkgs; }) devshellMenuCommandName; in
+{
+  pkgs,
+  devshell,
+  runTest,
+}:
+let
+  inherit (import ../../nix/commands/lib.nix { inherit pkgs; }) devshellMenuCommandName;
+in
 {
   # Basic devshell usage
   commands-1 =

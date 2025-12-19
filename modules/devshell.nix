@@ -409,43 +409,42 @@ in
 
     packages = foldl' (sum: drv: sum ++ (inputsOf drv)) [ ] cfg.packagesFrom;
 
-    startup =
-      {
-        motd = noDepEntry ''
-          __devshell-motd() {
-            cat <<DEVSHELL_PROMPT
-          ${cfg.motd}
-          DEVSHELL_PROMPT
-          }
+    startup = {
+      motd = noDepEntry ''
+        __devshell-motd() {
+          cat <<DEVSHELL_PROMPT
+        ${cfg.motd}
+        DEVSHELL_PROMPT
+        }
 
-          if [[ ''${DEVSHELL_NO_MOTD:-} = 1 ]]; then
-            # Skip if that env var is set
-            :
-          elif [[ ''${DIRENV_IN_ENVRC:-} = 1 ]]; then
-            # Print the motd in direnv
+        if [[ ''${DEVSHELL_NO_MOTD:-} = 1 ]]; then
+          # Skip if that env var is set
+          :
+        elif [[ ''${DIRENV_IN_ENVRC:-} = 1 ]]; then
+          # Print the motd in direnv
+          __devshell-motd
+        else
+          # Print information if the prompt is displayed. We have to make
+          # that distinction because `nix-shell -c "cmd"` is running in
+          # interactive mode.
+          __devshell-prompt() {
             __devshell-motd
-          else
-            # Print information if the prompt is displayed. We have to make
-            # that distinction because `nix-shell -c "cmd"` is running in
-            # interactive mode.
-            __devshell-prompt() {
-              __devshell-motd
-              # Make it a noop
-              __devshell-prompt() { :; }
-            }
-            PROMPT_COMMAND=__devshell-prompt''${PROMPT_COMMAND+;$PROMPT_COMMAND}
-          fi
-        '';
-      }
-      // (optionalAttrs cfg.load_profiles {
-        load_profiles = lib.noDepEntry ''
-          # Load installed profiles
-          for file in "$DEVSHELL_DIR/etc/profile.d/"*.sh; do
-            # If that folder doesn't exist, bash loves to return the whole glob
-            [[ -f "$file" ]] && source "$file"
-          done
-        '';
-      });
+            # Make it a noop
+            __devshell-prompt() { :; }
+          }
+          PROMPT_COMMAND=__devshell-prompt''${PROMPT_COMMAND+;$PROMPT_COMMAND}
+        fi
+      '';
+    }
+    // (optionalAttrs cfg.load_profiles {
+      load_profiles = lib.noDepEntry ''
+        # Load installed profiles
+        for file in "$DEVSHELL_DIR/etc/profile.d/"*.sh; do
+          # If that folder doesn't exist, bash loves to return the whole glob
+          [[ -f "$file" ]] && source "$file"
+        done
+      '';
+    });
 
     interactive = {
       PS1_util = noDepEntry ''
@@ -488,7 +487,8 @@ in
         #  `lib.getExe`, `nix run`, `nix bundle`, etc.
         {
           mainProgram = cfg.package.meta.mainProgram;
-        } // cfg.meta;
+        }
+        // cfg.meta;
       profile = cfg.package;
       passthru = {
         inherit config;

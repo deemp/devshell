@@ -1,4 +1,10 @@
-{ lib, config, pkgs, options, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  options,
+  ...
+}:
 let
   inherit (import ../nix/commands/lib.nix { inherit pkgs options config; })
     commandsType
@@ -48,10 +54,7 @@ in
 
   # Add the commands to the devshell packages. Either as wrapper scripts, or
   # the whole package.
-  config.devshell.packages =
-    lib.filter
-      (x: x != null)
-      (map commandToPackage config.commands);
+  config.devshell.packages = lib.filter (x: x != null) (map commandToPackage config.commands);
 
   # config.devshell.motd = "$(motd)";
 }

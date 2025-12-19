@@ -1,7 +1,10 @@
-{ system ? builtins.currentSystem
-, pkgs ? import ../nixpkgs.nix { inherit system; }
+{
+  system ? builtins.currentSystem,
+  pkgs ? import ../nixpkgs.nix { inherit system; },
 }:
-let inherit (pkgs) lib; in
+let
+  inherit (pkgs) lib;
+in
 {
   nested = {
     "category 1" = [
@@ -10,7 +13,10 @@ let inherit (pkgs) lib; in
         prefixes.a.b.yq-1 = "nix run ../#";
         packages = {
           a.b = {
-            jq-1 = [ "[package] jq description" pkgs.jq ];
+            jq-1 = [
+              "[package] jq description"
+              pkgs.jq
+            ];
             yq-1 = pkgs.yq-go;
             yq-2 = pkgs.yq-go;
           };
@@ -33,13 +39,19 @@ let inherit (pkgs) lib; in
         commands.a.b.awk = ''${lib.getExe pkgs.gawk} $@'';
         helps.a.b.awk = "[command] run awk";
 
-        commands.a.b.jq-2 = [ "[command] run jq" "${lib.getExe pkgs.jq} $@" ];
+        commands.a.b.jq-2 = [
+          "[command] run jq"
+          "${lib.getExe pkgs.jq} $@"
+        ];
 
         commands."command with spaces" = ''printf "hello\n"'';
         helps."command with spaces" = ''[command] print "hello"'';
       }
       pkgs.python3
-      [ "[package] vercel description" "nodePackages.vercel" ]
+      [
+        "[package] vercel description"
+        "nodePackages.vercel"
+      ]
       "nodePackages.yarn"
       {
         package = pkgs.gnugrep;
@@ -63,7 +75,10 @@ let inherit (pkgs) lib; in
       {
         package = pkgs.go;
       }
-      [ "[package] run hello " "hello" ]
+      [
+        "[package] run hello "
+        "hello"
+      ]
       pkgs.nixpkgs-fmt
     ];
   };
@@ -73,7 +88,10 @@ let inherit (pkgs) lib; in
       category = "scripts";
       package = "black";
     }
-    [ "[package] print hello" "hello" ]
+    [
+      "[package] print hello"
+      "hello"
+    ]
     "nodePackages.yarn"
 
     # uncomment to trigger errors:

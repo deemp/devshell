@@ -120,26 +120,43 @@ let
   );
 
   inherit (import ../nix/commands/lib.nix { inherit pkgs options; })
-    mkLocSuffix nestedOptionsType flatOptionsType;
+    mkLocSuffix
+    nestedOptionsType
+    flatOptionsType
+    ;
 
   # TODO: display values like TOML instead.
   toMarkdown =
     optionsDocs:
     let
       optionsDocsPartitionedIsMain = partition (opt: head opt.loc != "_module") optionsDocs;
-      nixOnlyLocPrefix = [ "commands" "<name>" ];
-      optionsDocsPartitionedIsNixOnly = partition (opt: (take 2 opt.loc) == nixOnlyLocPrefix) optionsDocsPartitionedIsMain.right;
+      nixOnlyLocPrefix = [
+        "commands"
+        "<name>"
+      ];
+      optionsDocsPartitionedIsNixOnly = partition (
+        opt: (take 2 opt.loc) == nixOnlyLocPrefix
+      ) optionsDocsPartitionedIsMain.right;
       nixOnly = optionsDocsPartitionedIsNixOnly.right;
       nixOnlyPartitionedIsTop = partition (opt: opt.loc == nixOnlyLocPrefix ++ [ "*" ]) nixOnly;
-      nixOnlyPartitionedHasSuffix = partition (opt: ("${last opt.loc}" == "${mkLocSuffix nestedOptionsType.name}")) nixOnlyPartitionedIsTop.wrong;
-      nixOnlyOrdered = nixOnlyPartitionedIsTop.right ++ nixOnlyPartitionedHasSuffix.right ++ nixOnlyPartitionedHasSuffix.wrong;
+      nixOnlyPartitionedHasSuffix = partition (
+        opt: ("${last opt.loc}" == "${mkLocSuffix nestedOptionsType.name}")
+      ) nixOnlyPartitionedIsTop.wrong;
+      nixOnlyOrdered =
+        nixOnlyPartitionedIsTop.right
+        ++ nixOnlyPartitionedHasSuffix.right
+        ++ nixOnlyPartitionedHasSuffix.wrong;
       nixAndTOMLOrdered = optionsDocsPartitionedIsNixOnly.wrong;
       nixExtra = optionsDocsPartitionedIsMain.wrong;
       concatOpts = opts: (concatStringsSep "\n\n" (map optToMd opts));
 
       # TODO: handle opt.relatedPackages. What is it for?
-      optToMd = opt:
-        let heading = lib.showOption (filter isString opt.loc) + concatStrings (filter (x: !(isString x)) opt.loc); in
+      optToMd =
+        opt:
+        let
+          heading =
+            lib.showOption (filter isString opt.loc) + concatStrings (filter (x: !(isString x)) opt.loc);
+        in
         ''
           ### `${heading}`
 
@@ -175,15 +192,7 @@ let
           **Declared in**:
 
         ''
-        + (
-          lib.concatStringsSep
-            "\n"
-            (map
-              (decl: "- [${decl.path}](${decl.url})")
-              opt.declarations
-            )
-        )
-      ;
+        + (lib.concatStringsSep "\n" (map (decl: "- [${decl.path}](${decl.url})") opt.declarations));
       doc = [
         "# Options\n"
         "## Available only in `Nix`\n"
@@ -197,7 +206,8 @@ let
             mkLink = path: "[link](${mkUrl root path})";
           in
           assert lib.assertMsg (lib.pathExists pathExamplesReal) "Path `${pathExamplesReal} doesn't exist.`";
-          assert lib.assertMsg (lib.pathExists pathCommandsLibReal) "Path `${pathCommandsLibReal} doesn't exist.`";
+          assert lib.assertMsg (lib.pathExists pathCommandsLibReal)
+            "Path `${pathCommandsLibReal} doesn't exist.`";
           ''
             See how `commands.<name>` (${mkLink pathExamples}) maps to `commands.*` (${mkLink pathCommandsLib}).
           ''

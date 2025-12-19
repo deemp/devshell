@@ -87,8 +87,14 @@
                 }
               ];
               utilites = [
-                [ "GitHub utility" "gitAndTools.hub" ]
-                [ "golang linter" "golangci-lint" ]
+                [
+                  "GitHub utility"
+                  "gitAndTools.hub"
+                ]
+                [
+                  "golang linter"
+                  "golangci-lint"
+                ]
               ];
             };
           };
@@ -105,23 +111,31 @@
         }
       );
 
-        apps.default = devShells.default.flakeApp;
+      apps.default = devShells.default.flakeApp;
 
-        checks = eachSystem ({pkgs, ...}:
-          with pkgs.lib;
-          pipe { } [
-            (x:
-              x // (import ./tests { inherit pkgs; })
-                // devShells
-                // { inherit (devshell.modules-docs) markdown; }
-            )
-            (collect isDerivation)
-            (map (x: { name = x.name or x.pname; value = x; }))
-            listToAttrs
-          ]
-        );
+      checks = eachSystem (
+        { pkgs, ... }:
+        with pkgs.lib;
+        pipe { } [
+          (
+            x:
+            x
+            // (import ./tests { inherit pkgs; })
+            // devShells
+            // {
+              inherit (devshell.modules-docs) markdown;
+            }
+          )
+          (collect isDerivation)
+          (map (x: {
+            name = x.name or x.pname;
+            value = x;
+          }))
+          listToAttrs
+        ]
+      );
 
-        formatter = eachSystem ({ pkgs, ... }: pkgs.nixfmt);
+      formatter = eachSystem ({ pkgs, ... }: pkgs.nixfmt);
 
       # Import this overlay into your instance of nixpkgs
       overlays.default = import ./overlay.nix;

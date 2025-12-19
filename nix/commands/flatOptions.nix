@@ -1,6 +1,13 @@
-{ lib, strOrPackage, flatOptionsType, options }:
+{
+  lib,
+  strOrPackage,
+  flatOptionsType,
+  options,
+}:
 with lib;
-let flat = name: "`${name} (${flatOptionsType.name})`"; in
+let
+  flat = name: "`${name} (${flatOptionsType.name})`";
+in
 # These are all the options available for the commands.
 {
   prefix = mkOption {
@@ -12,17 +19,22 @@ let flat = name: "`${name} (${flatOptionsType.name})`"; in
   };
 
   name = mkOption {
-    type = types.nullOr (types.str // (
-      let regex = "[^$\r\n]+"; in
-      {
-        description = "string matching ${regex}";
-        check = x: lib.isString x && match regex x != null;
-      }
-    ));
+    type = types.nullOr (
+      types.str
+      // (
+        let
+          regex = "[^$\r\n]+";
+        in
+        {
+          description = "string matching ${regex}";
+          check = x: lib.isString x && match regex x != null;
+        }
+      )
+    );
     default = null;
     description = ''
       Name of the command.
-      
+
       Defaults to a ${flat "package"} name or pname if present.
 
       The value of this option is required for ${flat "command"}.
@@ -63,7 +75,12 @@ let flat = name: "`${name} (${flatOptionsType.name})`"; in
   };
 
   package = mkOption {
-    type = types.nullOr (types.oneOf [ strOrPackage types.package ]);
+    type = types.nullOr (
+      types.oneOf [
+        strOrPackage
+        types.package
+      ]
+    );
     default = null;
     description = ''
       Used to bring in a specific package. This package will be added to the
@@ -88,9 +105,7 @@ let flat = name: "`${name} (${flatOptionsType.name})`"; in
     type = types.nullOr types.bool;
     default = null;
     description = ''
-      When `true` or when `null` and `${
-        showOption (options.devshell.menu.type.getSubOptions options.devshell.menu.loc).interpolate.loc
-      }` is `true`, shell variables in ${flat "help"}
+      When `true` or when `null` and `${showOption (options.devshell.menu.type.getSubOptions options.devshell.menu.loc).interpolate.loc}` is `true`, shell variables in ${flat "help"}
       will be interpolated.
 
       Otherwise, they will not.

@@ -1,11 +1,12 @@
-{ pkgs
-, strOrPackage
-, attrsNestedOf
-, pairHelpPackageType
-, pairHelpCommandType
-, flatOptionsType
-, nestedOptionsType
-, maxDepth
+{
+  pkgs,
+  strOrPackage,
+  attrsNestedOf,
+  pairHelpPackageType,
+  pairHelpCommandType,
+  flatOptionsType,
+  nestedOptionsType,
+  maxDepth,
 }:
 with pkgs.lib;
 let
@@ -19,9 +20,9 @@ in
     description = ''
       Can be used as ${flat "prefix"} for all
       ${nested "packages"} and ${nested "commands"}.
-      
+
       Priority of this option when selecting a ${flat "prefix"}: `1`.
-      
+
       Lowest priority: `1`.
     '';
     example = literalExpression ''
@@ -40,7 +41,7 @@ in
       with a matching path in ${nested "packages"} or ${nested "commands"}.
 
       Priority of this option when selecting a ${flat "prefix"}: `2`.
-      
+
       Lowest priority: `1`.
     '';
     example = literalExpression ''
@@ -52,13 +53,12 @@ in
   };
 
   packages = mkOption {
-    type =
-      attrsNestedOf (
-        types.oneOf [
-          strOrPackage
-          pairHelpPackageType
-        ]
-      );
+    type = attrsNestedOf (
+      types.oneOf [
+        strOrPackage
+        pairHelpPackageType
+      ]
+    );
     default = { };
     description = ''
       A leaf value:
@@ -78,19 +78,19 @@ in
             Lowest priority: `1`.
          2. The second element is interpreted as if
             the leaf value were initially a `string` or a `derivation`.
-      
+
       A path to a leaf value is concatenated via `.`
       and used as ${flat "name"}.
 
       Priority of `package.meta.description` (if present in the resolved ${flat "package"}) 
       when selecting ${flat "help"}: `2`
-      
+
       Lowest priority: `1`.
 
       A user may prefer to not bring to the environment some of the packages.
-      
+
       Priority of `expose = false` when selecting ${flat "expose"}: `1`.
-      
+
       Lowest priority: `1`.
     '';
     example = literalExpression ''
@@ -101,15 +101,14 @@ in
   };
 
   commands = mkOption {
-    type =
-      attrsNestedOf (
-        types.oneOf [
-          types.str
-          pairHelpCommandType
-        ]
-      );
+    type = attrsNestedOf (
+      types.oneOf [
+        types.str
+        pairHelpCommandType
+      ]
+    );
     default = { };
-    description = ''        
+    description = ''
       A leaf value:
 
       1. When a `string`, it's used as ${flat "command"}.
@@ -136,7 +135,7 @@ in
       ${nested "packages"} and ${nested "commands"}.
 
       Priority of this option when selecting a ${flat "help"}: `1`.
-      
+
       Lowest priority: `1`.
     '';
     example = literalExpression ''
@@ -155,7 +154,7 @@ in
       with a matching path in ${nested "packages"} or ${nested "commands"}.
 
       Priority of this option when selecting ${flat "help"}: `3`.
-      
+
       Lowest priority: `1`.
     '';
     example = literalExpression ''
@@ -172,13 +171,13 @@ in
     description = ''
       Can be used as ${flat "expose"} for all
       ${nested "packages"} and ${nested "commands"}.
-      
+
       Priority of this option when selecting ${flat "expose"}: `2`.
-      
+
       When selecting ${flat "expose"} for
       - ${flat "package"}, priority of `false`: `1`.
       - ${flat "command"}, priority of `true`: `1`.
-      
+
       Lowest priority: `1`.
     '';
     example = literalExpression ''
@@ -197,7 +196,7 @@ in
       with a matching path in ${nested "packages"} or ${nested "commands"}.
 
       Priority of this option when selecting ${flat "expose"}: `3`.
-      
+
       When selecting ${flat "expose"} for
       - ${flat "package"}, priority of `false`: `1`.
       - ${flat "command"}, priority of `true`: `1`.
@@ -220,7 +219,7 @@ in
       can be interpolated.
 
       Priority of this option when selecting ${flat "interpolate"}: `1`.
-      
+
       Lowest priority: `1`.
     '';
     example = true;
@@ -235,7 +234,7 @@ in
       with a matching path in ${nested "packages"} or ${nested "commands"}.
 
       Priority of this option when selecting ${flat "interpolate"}: `2`.
-      
+
       Lowest priority: `1`.
     '';
     example = true;
